@@ -1,0 +1,28 @@
+--- ./pt-online-schema-change	2019-11-19 07:40:58.000000000 +0000
++++ ./pt-online-schema-change-new	2020-02-28 14:26:01.324541301 +0000
+@@ -9525,6 +9525,13 @@
+          my $statements  = $nibble_iter->statements();
+          my $boundary    = $nibble_iter->boundaries();
+ 
++
++         if ( $o->get('no-data') ) {
++            print "Not copying rows because --no-data was specified.\n";
++            return;
++         }
++
++
+          if ( $o->get('dry-run') ) {
+             print "Not copying rows because this is a dry run.\n";
+          }
+@@ -12428,6 +12435,11 @@
+ however; it will only give the server a chance to recover from the queueing.  If
+ you notice queueing, it is best to decrease the chunk time.
+ 
++=item --no-data
++
++No row will be copied to the new table. This is really dangerous, please use it
++wisely.
++
+ =item --preserve-triggers
+ 
+ Preserves old triggers when specified. 
