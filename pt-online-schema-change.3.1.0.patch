@@ -1,12 +1,18 @@
---- ./pt-online-schema-change	2019-11-19 07:40:58.000000000 +0000
-+++ ./pt-online-schema-change-new	2020-02-28 14:26:01.324541301 +0000
-@@ -9525,6 +9525,13 @@
+--- /usr/bin/pt-online-schema-change	2019-11-19 07:40:58.000000000 +0000
++++ pt-online-schema-change	2020-03-01 22:54:38.968673926 +0000
+@@ -9525,6 +9525,19 @@
           my $statements  = $nibble_iter->statements();
           my $boundary    = $nibble_iter->boundaries();
  
 +
 +         if ( $o->get('no-data') ) {
 +            print "Not copying rows because --no-data was specified.\n";
++            if ($nibble_iter->{pause_file}) {
++              while(-f $nibble_iter->{pause_file}) {
++                 print "Sleeping $nibble_iter->{sleep} seconds because $nibble_iter->{pause_file} exists\n";
++                 sleep($nibble_iter->{sleep});
++              }
++            }
 +            return;
 +         }
 +
@@ -14,7 +20,7 @@
           if ( $o->get('dry-run') ) {
              print "Not copying rows because this is a dry run.\n";
           }
-@@ -12428,6 +12435,11 @@
+@@ -12428,6 +12441,11 @@
  however; it will only give the server a chance to recover from the queueing.  If
  you notice queueing, it is best to decrease the chunk time.
  
