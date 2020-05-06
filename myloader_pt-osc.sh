@@ -198,7 +198,8 @@ fi
 
 myecho "Starting myloader"
 # We are reading to import the data
-/root/git/mydumper/myloader -q 1 -d ${working_path} -t $threads $credentials 
+#/root/git/mydumper/myloader -q 1 -d ${working_path} -t $threads $credentials 
+myloader -q 1 -d ${working_path} -t $threads $credentials
 
 myecho "Removing pause file"
 rm $ptosc_pause
