@@ -13,7 +13,7 @@ min_id=1
 chunk_size=1000
 threads=4
 credentials=""
-
+ignore_download="no"
 while [[ $# -gt 0 ]]
 do
 key="$1"
@@ -66,6 +66,10 @@ case $key in
     --chunk-size)
     chunk_size="$2"
     shift
+    shift
+    ;;
+    --ignore-download)
+    ignore_download="yes"
     shift
     ;;
     --alter)
@@ -124,21 +128,23 @@ git_url="https://raw.githubusercontent.com/david-ducos-percona/myloader_pt-osc/m
 
 mkdir -p ${bin_path}
 
-wget percona.com/get/pt-online-schema-change > /dev/null 2>&1
-chmod u+x pt-online-schema-change
-rm ${bin_path}/pt-online-schema-change
-mv pt-online-schema-change $bin_path
-
 ptosc=${bin_path}/pt-online-schema-change
 
-version=$( ${ptosc} --version | cut -d' ' -f2 )
-ptosc_patch_filename=pt-online-schema-change.${version}.patch
-rm $ptosc_patch_filename
+if [ "$ignore_download" != "yes" ]
+then
+   wget percona.com/get/pt-online-schema-change > /dev/null 2>&1
+   chmod u+x pt-online-schema-change
+   rm ${bin_path}/pt-online-schema-change
+   mv pt-online-schema-change $bin_path
 
-wget ${git_url}/${ptosc_patch_filename} > /dev/null 2>&1
+   version=$( ${ptosc} --version | cut -d' ' -f2 )
+   ptosc_patch_filename=pt-online-schema-change.${version}.patch
+   rm $ptosc_patch_filename
 
-patch ${ptosc} ${ptosc_patch_filename}
+   wget ${git_url}/${ptosc_patch_filename} > /dev/null 2>&1
 
+   patch ${ptosc} ${ptosc_patch_filename}
+fi
 
 ptosc_log="${bin_path}/ptosc.log"
 ptosc_pause="${bin_path}/pause_file"
@@ -158,21 +164,40 @@ then
   max_id=$( echo "select max(${pk_column}) from ${table_name}" | mysql $credentials $database -NA )
 fi
 
-echo "Creating the INSERT INTO files"
+myecho "Creating the INSERT INTO files"
 last=$(( ($max_id - $min_id ) / $chunk_size + 1 ))
 
 from=${min_id}
-for i in $(seq -w 00000 $last | sort -R)
+pids=""
+for m in $(seq -w 00000 00003 )
+do
+for i in $(seq -w $m 4 $last | sort -R)
 do
   to=$(( $from + $chunk_size - 1 ))
   filename="${working_path}/${database}.${table_name}.${i}.sql"
   echo "${insert_statement}" | sed "s/FROM .*/FROM \`${database}\`.\`${table_name}\` WHERE ${pk_column} between $from AND $to ;/g " > $filename
   from=$(( $to + 1 ))
+done &
+pids+=" $!"
 done
+
+for p in $pids; do
+  wait $p
+done
+myecho "All pids finished"
+
+# check if table is created
+echo "SHOW CREATE TABLE \`$(echo $insert_statement | cut -f 2-4 -d'`')\`" | mysql > /dev/null
+error=$?
+if (( $error > 0 ))
+then
+	myecho "New table not found"
+	exit $error
+fi
 
 myecho "Starting myloader"
 # We are reading to import the data
-/root/git/my/mydumper/myloader -q 1 -d ${working_path} -t $threads $credentials 
+/root/git/mydumper/myloader -q 1 -d ${working_path} -t $threads $credentials 
 
 myecho "Removing pause file"
 rm $ptosc_pause
