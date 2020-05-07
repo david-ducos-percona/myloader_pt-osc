@@ -7,6 +7,18 @@ function myecho {
   echo "$(date ): $*"
 }
 
+if [ "$(which myloader)" == "" ]
+then
+	myecho "Mydumper not installed"
+	exit 1
+fi
+
+if [ "$(which pt-online-schema-change)" == "" ]
+then
+	myecho "Percona Toolkit not installed"
+	exit 1
+fi
+
 working_path=$PWD
 pk_column=id
 min_id=1
