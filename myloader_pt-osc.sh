@@ -179,17 +179,18 @@ fi
 myecho "Creating the INSERT INTO files"
 last=$(( ($max_id - $min_id ) / $chunk_size + 1 ))
 
+
 from=${min_id}
 pids=""
-for m in $(seq -w 00000 00003 )
+for m in $(seq 0 $(( $threads - 1 )) )
 do
 	from=$(( ${min_id} + $m * $chunk_size ))
-	for i in $(seq -w $m 4 $last ) # | sort -R)
+	for i in $(seq -w $m $threads $last ) # | sort -R)
 	do
 	  to=$(( $from + $chunk_size - 1 ))
 	  filename="${working_path}/${database}.${table_name}.${i}.sql"
 	  echo "${insert_statement}" | sed "s/FROM .*/FROM \`${database}\`.\`${table_name}\` WHERE ${pk_column} between $from AND $to ;/g " > $filename
-	  from=$(( $to + 1 + 3 * $chunk_size ))
+	  from=$(( $to + 1 + ($threads -1) * $chunk_size ))
 	done &
 pids+=" $!"
 done
