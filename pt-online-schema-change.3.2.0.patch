@@ -1,6 +1,6 @@
 --- /usr/bin/pt-online-schema-change	2019-11-19 07:40:58.000000000 +0000
 +++ pt-online-schema-change	2020-03-01 22:54:38.968673926 +0000
-@@ -9525,6 +9525,19 @@
+@@ -9633,6 +9633,19 @@
           my $statements  = $nibble_iter->statements();
           my $boundary    = $nibble_iter->boundaries();
  
@@ -20,7 +20,7 @@
           if ( $o->get('dry-run') ) {
              print "Not copying rows because this is a dry run.\n";
           }
-@@ -12428,6 +12441,11 @@
+@@ -12534,6 +12547,11 @@
  however; it will only give the server a chance to recover from the queueing.  If
  you notice queueing, it is best to decrease the chunk time.
  
